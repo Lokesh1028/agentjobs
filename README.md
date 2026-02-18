@@ -1,7 +1,5 @@
 # AgentJobs 🤖
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Lokesh1028/agentjobs)
-
 
 **API-first job platform optimized for AI agents.**
 
@@ -85,6 +83,27 @@ Jobs are scored 0-100:
 - **Salary match** (15 pts): meets minimum = 15, close = 10
 - **Experience match** (15 pts): within range = 15, close = 10
 - **Recency** (10 pts): today = 10, this week = 8, this month = 5
+
+
+## Deploy
+
+### One-Click (Render)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Lokesh1028/agentjobs)
+
+### Manual (any host)
+
+```bash
+git clone https://github.com/Lokesh1028/agentjobs.git
+cd agentjobs
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+Database auto-seeds with 600+ jobs on first run. For 2000+ real jobs, run:
+```bash
+python services/real_scraper.py
+```
 
 ## Tech Stack
 
