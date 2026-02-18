@@ -22,7 +22,7 @@ from routers import admin as admin_router
 async def seed_admin():
     """Create default admin user if not exists."""
     from database import get_db
-    from passlib.hash import bcrypt
+    import bcrypt as _bcrypt
     import uuid
     from datetime import datetime
 
@@ -30,7 +30,7 @@ async def seed_admin():
     cursor = await db.execute("SELECT id FROM users WHERE email = ?", ["admin@agentjobs.dev"])
     if not await cursor.fetchone():
         admin_id = f"u_{uuid.uuid4().hex[:12]}"
-        password_hash = bcrypt.hash("AgentJobs2024!")
+        password_hash = _bcrypt.hashpw("AgentJobs2024!".encode(), _bcrypt.gensalt()).decode()
         now = datetime.utcnow().isoformat()
         await db.execute("""
             INSERT INTO users (id, email, name, password_hash, company, role, created_at)

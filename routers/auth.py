@@ -7,7 +7,7 @@ import json
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Header, Request, Depends
 from typing import Optional
-from passlib.hash import bcrypt
+import bcrypt as _bcrypt
 from models import (
     AuthRegisterRequest, AuthRegisterResponse, UsageResponse,
     SignupRequest, LoginRequest, UserProfile, AuthResponse, MessageResponse,
@@ -132,7 +132,7 @@ async def signup(request: SignupRequest, req: Request):
 
     # Create user
     user_id = f"u_{uuid.uuid4().hex[:12]}"
-    password_hash = bcrypt.hash(request.password)
+    password_hash = _bcrypt.hashpw(request.password.encode(), _bcrypt.gensalt()).decode()
     now = datetime.utcnow().isoformat()
 
     await db.execute("""
@@ -172,7 +172,7 @@ async def login(request: LoginRequest, req: Request):
     if not row:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    if not bcrypt.verify(request.password, row["password_hash"]):
+    if not _bcrypt.checkpw(request.password.encode(), row["password_hash"].encode()):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     # Update login stats
