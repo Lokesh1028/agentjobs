@@ -2,8 +2,12 @@ services:
   - type: web
     name: agentjobs
     runtime: python
+    repo: https://github.com/Lokesh1028/agentjobs
     buildCommand: pip install -r requirements.txt
-    startCommand: bash start.sh
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.0"
+      - key: DEBUG
+        value: "false"
