@@ -37,6 +37,120 @@ function getMatchClass(score) {
     return 'low';
 }
 
+// ── Auth Functions ──────────────────────────────
+
+function authGetToken() {
+    return localStorage.getItem('aj_token');
+}
+
+function authGetUser() {
+    try {
+        const u = localStorage.getItem('aj_user');
+        return u ? JSON.parse(u) : null;
+    } catch (e) { return null; }
+}
+
+function authSetSession(token, user) {
+    localStorage.setItem('aj_token', token);
+    localStorage.setItem('aj_user', JSON.stringify(user));
+}
+
+function authClearSession() {
+    localStorage.removeItem('aj_token');
+    localStorage.removeItem('aj_user');
+}
+
+async function authLogin(email, password) {
+    const res = await fetch(API_BASE + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Login failed');
+    }
+    const data = await res.json();
+    authSetSession(data.token, data.user);
+    return data;
+}
+
+async function authSignup(params) {
+    const res = await fetch(API_BASE + '/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Signup failed');
+    }
+    const data = await res.json();
+    authSetSession(data.token, data.user);
+    return data;
+}
+
+async function authLogout() {
+    const token = authGetToken();
+    if (token) {
+        fetch(API_BASE + '/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+        }).catch(() => {});
+    }
+    authClearSession();
+    window.location.href = '/';
+}
+
+async function authGetMe() {
+    const token = authGetToken();
+    if (!token) return null;
+    try {
+        const res = await fetch(API_BASE + '/auth/me', {
+            headers: { 'Authorization': 'Bearer ' + token },
+        });
+        if (!res.ok) {
+            if (res.status === 401) authClearSession();
+            return null;
+        }
+        const user = await res.json();
+        localStorage.setItem('aj_user', JSON.stringify(user));
+        return user;
+    } catch (e) { return null; }
+}
+
+function authGetHeaders() {
+    const token = authGetToken();
+    return token ? { 'Authorization': 'Bearer ' + token } : {};
+}
+
+function renderAuthHeader() {
+    const area = document.getElementById('auth-header-area');
+    if (!area) return;
+
+    const user = authGetUser();
+    if (user) {
+        const initials = (user.name || user.email || '?').charAt(0).toUpperCase();
+        const displayName = user.name || user.email.split('@')[0];
+        area.innerHTML = `
+            <div class="auth-header">
+                <div class="auth-user-info">
+                    <div class="auth-avatar">${escapeHtml(initials)}</div>
+                    <span>${escapeHtml(displayName)}</span>
+                    ${user.role === 'admin' ? '<a href="/admin" style="font-size:11px;" class="tag orange">Admin</a>' : ''}
+                </div>
+                <button class="auth-logout-btn" onclick="authLogout()">Logout</button>
+            </div>
+        `;
+    } else {
+        area.innerHTML = `
+            <div class="auth-header">
+                <a href="/login" class="auth-login-btn">Login</a>
+            </div>
+        `;
+    }
+}
+
 // ── API Functions ───────────────────────────────
 
 async function apiGet(path, params = {}) {
@@ -44,15 +158,17 @@ async function apiGet(path, params = {}) {
     Object.entries(params).forEach(([k, v]) => {
         if (v !== null && v !== undefined && v !== '') url.searchParams.set(k, v);
     });
-    const res = await fetch(url);
+    const headers = authGetHeaders();
+    const res = await fetch(url, { headers });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     return res.json();
 }
 
 async function apiPost(path, body) {
+    const headers = { 'Content-Type': 'application/json', ...authGetHeaders() };
     const res = await fetch(API_BASE + path, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -239,6 +355,9 @@ function quickSearch() {
 // ── Initialize ──────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Render auth header on all pages
+    renderAuthHeader();
+
     // Landing page
     if ($('#stats-row')) loadStats();
     if ($('#hero-search')) {

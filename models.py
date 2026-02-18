@@ -157,3 +157,102 @@ class TrendingSkill(BaseModel):
 class TrendingSkillsResponse(BaseModel):
     skills: List[TrendingSkill]
     total_jobs_analyzed: int
+
+
+# ── User Auth Models ────────────────────────────────────────────
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str = Field(..., min_length=6)
+    name: Optional[str] = None
+    company: Optional[str] = None
+    role: str = Field(default="user")
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class UserProfile(BaseModel):
+    id: str
+    email: str
+    name: Optional[str] = None
+    company: Optional[str] = None
+    role: str = "user"
+    avatar_url: Optional[str] = None
+    is_active: bool = True
+    last_login: Optional[str] = None
+    login_count: int = 0
+    created_at: Optional[str] = None
+
+
+class AuthResponse(BaseModel):
+    user: UserProfile
+    token: str
+    message: str
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
+# ── Admin Dashboard Models ──────────────────────────────────────
+
+class DashboardStats(BaseModel):
+    total_users: int
+    new_users_today: int
+    new_users_week: int
+    new_users_month: int
+    total_searches: int
+    total_agent_matches: int
+    active_users_7d: int
+    top_searches: List[dict] = []
+    popular_skills: List[dict] = []
+    user_growth: List[dict] = []
+
+
+class AdminUserSummary(BaseModel):
+    id: str
+    email: str
+    name: Optional[str] = None
+    company: Optional[str] = None
+    role: str
+    is_active: bool
+    last_login: Optional[str] = None
+    login_count: int = 0
+    total_searches: int = 0
+    created_at: Optional[str] = None
+
+
+class AdminUserList(BaseModel):
+    count: int
+    total: int
+    users: List[AdminUserSummary]
+
+
+class ActivityEntry(BaseModel):
+    id: int
+    user_id: Optional[str] = None
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    action: str
+    details: Optional[str] = None
+    ip_address: Optional[str] = None
+    timestamp: Optional[str] = None
+
+
+class ActivityFeed(BaseModel):
+    count: int
+    total: int
+    activities: List[ActivityEntry]
+
+
+class MetricsResponse(BaseModel):
+    dau: int
+    wau: int
+    mau: int
+    retention_rate: float
+    searches_per_user: float
+    most_active_hours: List[dict] = []
+    growth_rate: float

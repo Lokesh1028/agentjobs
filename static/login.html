@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — AgentJobs</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">⚡ Agent<span>Jobs</span></a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/search">Search</a></li>
+            <li><a href="/docs-page">API Docs</a></li>
+            <li><a href="/agent">Hire an Agent</a></li>
+        </ul>
+        <div id="auth-header-area"></div>
+    </nav>
+
+    <section class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">⚡ Agent<span>Jobs</span></div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">Login</button>
+                <button class="auth-tab" onclick="switchTab('signup')">Sign Up</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <div id="login-error" class="auth-error" style="display:none;"></div>
+                <button type="submit" class="btn btn-primary auth-submit">Login</button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signup-form" class="auth-form" style="display:none;" onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signup-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="signup-password" placeholder="Min 6 characters" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="signup-name" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Company</label>
+                    <input type="text" id="signup-company" placeholder="Your company (optional)">
+                </div>
+                <div class="form-group">
+                    <label>I am a...</label>
+                    <select class="filter-select" id="signup-role" style="width:100%;">
+                        <option value="user">Job Seeker</option>
+                        <option value="recruiter">Recruiter</option>
+                    </select>
+                </div>
+                <div id="signup-error" class="auth-error" style="display:none;"></div>
+                <button type="submit" class="btn btn-primary auth-submit">Create Account</button>
+            </form>
+        </div>
+    </section>
+
+    <script src="/static/app.js"></script>
+    <script>
+        // Redirect if already logged in
+        if (authGetToken()) {
+            window.location.href = '/search';
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.auth-tab:${tab === 'login' ? 'first-child' : 'last-child'}`).classList.add('active');
+            document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('signup-error').style.display = 'none';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const errEl = document.getElementById('login-error');
+            errEl.style.display = 'none';
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+
+            try {
+                const data = await authLogin(
+                    document.getElementById('login-email').value,
+                    document.getElementById('login-password').value
+                );
+                window.location.href = '/search';
+            } catch (err) {
+                errEl.textContent = err.message;
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Login';
+            }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const errEl = document.getElementById('signup-error');
+            errEl.style.display = 'none';
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+
+            try {
+                const data = await authSignup({
+                    email: document.getElementById('signup-email').value,
+                    password: document.getElementById('signup-password').value,
+                    name: document.getElementById('signup-name').value,
+                    company: document.getElementById('signup-company').value,
+                    role: document.getElementById('signup-role').value,
+                });
+                window.location.href = '/search';
+            } catch (err) {
+                errEl.textContent = err.message;
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        }
+    </script>
+</body>
+</html>

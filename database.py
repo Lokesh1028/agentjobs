@@ -110,6 +110,38 @@ async def init_db():
             completed_at TIMESTAMP
         );
 
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT NOT NULL UNIQUE,
+            name TEXT,
+            password_hash TEXT NOT NULL,
+            company TEXT,
+            role TEXT DEFAULT 'user',
+            avatar_url TEXT,
+            is_active BOOLEAN DEFAULT 1,
+            last_login TIMESTAMP,
+            login_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS sessions (
+            token TEXT PRIMARY KEY,
+            user_id TEXT REFERENCES users(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP,
+            is_active BOOLEAN DEFAULT 1
+        );
+
+        CREATE TABLE IF NOT EXISTS user_activity (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT REFERENCES users(id),
+            action TEXT NOT NULL,
+            details TEXT,
+            ip_address TEXT,
+            user_agent TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
         -- Indexes for performance
         CREATE INDEX IF NOT EXISTS idx_jobs_company_id ON jobs(company_id);
         CREATE INDEX IF NOT EXISTS idx_jobs_category ON jobs(category);
@@ -126,6 +158,11 @@ async def init_db():
         CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);
         CREATE INDEX IF NOT EXISTS idx_api_usage_api_key_id ON api_usage(api_key_id);
         CREATE INDEX IF NOT EXISTS idx_api_usage_timestamp ON api_usage(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+        CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON user_activity(user_id);
+        CREATE INDEX IF NOT EXISTS idx_user_activity_timestamp ON user_activity(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_user_activity_action ON user_activity(action);
+        CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
     """)
 
     # Standalone FTS table (no content sync — we manage inserts ourselves)

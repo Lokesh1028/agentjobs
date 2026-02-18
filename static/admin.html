@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — AgentJobs</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">⚡ Agent<span>Jobs</span></a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/search">Search</a></li>
+            <li><a href="/docs-page">API Docs</a></li>
+            <li><a href="/agent">Hire an Agent</a></li>
+        </ul>
+        <div id="auth-header-area"></div>
+    </nav>
+
+    <section class="section" style="max-width:1200px;">
+        <div id="admin-loading" class="loading"><div class="spinner"></div></div>
+        <div id="admin-denied" style="display:none;text-align:center;padding:80px 20px;">
+            <h2 style="color:var(--red);">🔒 Admin Access Required</h2>
+            <p style="color:var(--text-secondary);margin:12px 0;">Please <a href="/login">login</a> with an admin account.</p>
+        </div>
+
+        <div id="admin-content" style="display:none;">
+            <h1 style="font-size:28px;margin-bottom:24px;">📊 Admin Dashboard</h1>
+
+            <!-- Stats Cards -->
+            <div class="admin-stats-grid" id="stats-cards">
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Total Users</div>
+                    <div class="admin-stat-value" id="stat-total-users">—</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Active Today</div>
+                    <div class="admin-stat-value" id="stat-active-today">—</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Total Searches</div>
+                    <div class="admin-stat-value" id="stat-searches">—</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Agent Matches</div>
+                    <div class="admin-stat-value" id="stat-agent">—</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">New This Week</div>
+                    <div class="admin-stat-value" id="stat-new-week">—</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Active (7d)</div>
+                    <div class="admin-stat-value" id="stat-active-7d">—</div>
+                </div>
+            </div>
+
+            <!-- Metrics Row -->
+            <div class="admin-metrics-row" id="metrics-row" style="margin-top:24px;">
+                <div class="admin-metric"><span class="admin-metric-label">DAU</span><span class="admin-metric-value" id="metric-dau">—</span></div>
+                <div class="admin-metric"><span class="admin-metric-label">WAU</span><span class="admin-metric-value" id="metric-wau">—</span></div>
+                <div class="admin-metric"><span class="admin-metric-label">MAU</span><span class="admin-metric-value" id="metric-mau">—</span></div>
+                <div class="admin-metric"><span class="admin-metric-label">Retention</span><span class="admin-metric-value" id="metric-retention">—</span></div>
+                <div class="admin-metric"><span class="admin-metric-label">Searches/User</span><span class="admin-metric-value" id="metric-spu">—</span></div>
+                <div class="admin-metric"><span class="admin-metric-label">Growth</span><span class="admin-metric-value" id="metric-growth">—</span></div>
+            </div>
+
+            <!-- Charts + Lists -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:32px;">
+                <!-- User Growth Chart -->
+                <div class="admin-panel">
+                    <h3>User Growth (30 days)</h3>
+                    <canvas id="growth-chart" width="500" height="200"></canvas>
+                </div>
+
+                <!-- Top Searches -->
+                <div class="admin-panel">
+                    <h3>Top Searches</h3>
+                    <div id="top-searches" class="admin-list"></div>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="admin-panel" style="margin-top:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h3>Users</h3>
+                    <div class="search-box" style="max-width:300px;margin:0;">
+                        <input type="text" id="user-search" placeholder="Search users..." oninput="debounceSearchUsers()">
+                    </div>
+                </div>
+                <div class="admin-table-wrap">
+                    <table class="admin-table" id="users-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Company</th>
+                                <th>Logins</th>
+                                <th>Searches</th>
+                                <th>Last Active</th>
+                                <th>Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Activity Feed -->
+            <div class="admin-panel" style="margin-top:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h3>Recent Activity</h3>
+                    <select class="filter-select" id="activity-filter" onchange="loadActivity()">
+                        <option value="">All Actions</option>
+                        <option value="login">Login</option>
+                        <option value="register">Register</option>
+                        <option value="search">Search</option>
+                        <option value="agent_search">Agent Search</option>
+                        <option value="view_job">View Job</option>
+                    </select>
+                </div>
+                <div id="activity-feed" class="admin-activity-feed"></div>
+            </div>
+
+            <!-- User Detail Modal -->
+            <div id="user-modal" class="admin-modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+                <div class="admin-modal-content">
+                    <div class="admin-modal-header">
+                        <h3 id="modal-user-name">User Details</h3>
+                        <button onclick="document.getElementById('user-modal').style.display='none'" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+                    </div>
+                    <div id="modal-user-body"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>AgentJobs Admin · v1.0</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+    <script>
+        let searchTimer = null;
+
+        async function adminFetch(path) {
+            const token = authGetToken();
+            const res = await fetch('/api/v1/admin' + path, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.status === 401 || res.status === 403) throw new Error('denied');
+            if (!res.ok) throw new Error('API error');
+            return res.json();
+        }
+
+        async function initAdmin() {
+            const token = authGetToken();
+            if (!token) {
+                document.getElementById('admin-loading').style.display = 'none';
+                document.getElementById('admin-denied').style.display = 'block';
+                return;
+            }
+
+            try {
+                // Check if admin
+                const me = await authGetMe();
+                if (!me || me.role !== 'admin') throw new Error('denied');
+
+                document.getElementById('admin-loading').style.display = 'none';
+                document.getElementById('admin-content').style.display = 'block';
+
+                // Load all data
+                await Promise.all([loadDashboard(), loadMetrics(), loadUsers(), loadActivity()]);
+            } catch (e) {
+                document.getElementById('admin-loading').style.display = 'none';
+                document.getElementById('admin-denied').style.display = 'block';
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                const d = await adminFetch('/dashboard');
+                document.getElementById('stat-total-users').textContent = d.total_users;
+                document.getElementById('stat-active-today').textContent = d.new_users_today;
+                document.getElementById('stat-searches').textContent = d.total_searches;
+                document.getElementById('stat-agent').textContent = d.total_agent_matches;
+                document.getElementById('stat-new-week').textContent = d.new_users_week;
+                document.getElementById('stat-active-7d').textContent = d.active_users_7d;
+
+                // Top searches
+                const tsEl = document.getElementById('top-searches');
+                if (d.top_searches.length === 0) {
+                    tsEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">No searches yet</p>';
+                } else {
+                    tsEl.innerHTML = d.top_searches.map(s =>
+                        `<div class="admin-list-item"><span>${escapeHtml(String(s.query))}</span><span class="tag">${s.count}</span></div>`
+                    ).join('');
+                }
+
+                // Growth chart
+                drawGrowthChart(d.user_growth);
+            } catch (e) { console.error('Dashboard error:', e); }
+        }
+
+        async function loadMetrics() {
+            try {
+                const m = await adminFetch('/metrics');
+                document.getElementById('metric-dau').textContent = m.dau;
+                document.getElementById('metric-wau').textContent = m.wau;
+                document.getElementById('metric-mau').textContent = m.mau;
+                document.getElementById('metric-retention').textContent = m.retention_rate + '%';
+                document.getElementById('metric-spu').textContent = m.searches_per_user;
+                document.getElementById('metric-growth').textContent = (m.growth_rate > 0 ? '+' : '') + m.growth_rate + '%';
+            } catch (e) { console.error('Metrics error:', e); }
+        }
+
+        async function loadUsers(q) {
+            try {
+                const params = q ? `?q=${encodeURIComponent(q)}` : '';
+                const d = await adminFetch('/users' + params);
+                const tbody = document.getElementById('users-tbody');
+                if (d.users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No users found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = d.users.map(u => `
+                    <tr onclick="showUserDetail('${u.id}')" style="cursor:pointer;">
+                        <td>
+                            <div style="font-weight:500;">${escapeHtml(u.name || 'Anonymous')}</div>
+                            <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(u.email)}</div>
+                        </td>
+                        <td><span class="tag ${u.role === 'admin' ? 'orange' : u.role === 'recruiter' ? 'blue' : ''}">${u.role}</span></td>
+                        <td>${escapeHtml(u.company || '—')}</td>
+                        <td>${u.login_count}</td>
+                        <td>${u.total_searches}</td>
+                        <td>${u.last_login ? timeAgo(u.last_login) : 'Never'}</td>
+                        <td>${timeAgo(u.created_at)}</td>
+                    </tr>
+                `).join('');
+            } catch (e) { console.error('Users error:', e); }
+        }
+
+        async function loadActivity() {
+            try {
+                const action = document.getElementById('activity-filter').value;
+                const params = action ? `?action=${action}` : '';
+                const d = await adminFetch('/activity' + params);
+                const el = document.getElementById('activity-feed');
+                if (d.activities.length === 0) {
+                    el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">No activity yet</p>';
+                    return;
+                }
+                el.innerHTML = d.activities.map(a => {
+                    const icon = {login:'🔑', register:'👤', search:'🔍', agent_search:'🤖', view_job:'👁️'}[a.action] || '📌';
+                    let detail = '';
+                    if (a.details) {
+                        try {
+                            const d = JSON.parse(a.details);
+                            detail = d.q || d.skills || d.job_id || d.email || '';
+                            if (Array.isArray(detail)) detail = detail.join(', ');
+                        } catch(e) { detail = a.details; }
+                    }
+                    return `<div class="admin-activity-item">
+                        <span class="admin-activity-icon">${icon}</span>
+                        <div class="admin-activity-info">
+                            <span class="admin-activity-user">${escapeHtml(a.user_name || a.user_email || 'Anonymous')}</span>
+                            <span class="admin-activity-action">${a.action}</span>
+                            ${detail ? `<span class="admin-activity-detail">${escapeHtml(String(detail))}</span>` : ''}
+                        </div>
+                        <span class="admin-activity-time">${timeAgo(a.timestamp)}</span>
+                    </div>`;
+                }).join('');
+            } catch (e) { console.error('Activity error:', e); }
+        }
+
+        async function showUserDetail(userId) {
+            try {
+                const d = await adminFetch('/users/' + userId);
+                const u = d.user;
+                document.getElementById('modal-user-name').textContent = u.name || u.email;
+                document.getElementById('modal-user-body').innerHTML = `
+                    <div class="admin-user-detail">
+                        <div class="admin-detail-row"><span>Email</span><span>${escapeHtml(u.email)}</span></div>
+                        <div class="admin-detail-row"><span>Role</span><span class="tag ${u.role === 'admin' ? 'orange' : ''}">${u.role}</span></div>
+                        <div class="admin-detail-row"><span>Company</span><span>${escapeHtml(u.company || '—')}</span></div>
+                        <div class="admin-detail-row"><span>Logins</span><span>${u.login_count}</span></div>
+                        <div class="admin-detail-row"><span>Last Active</span><span>${u.last_login || 'Never'}</span></div>
+                        <div class="admin-detail-row"><span>Joined</span><span>${u.created_at}</span></div>
+                        <div class="admin-detail-row"><span>Active</span><span>${u.is_active ? '✅ Yes' : '❌ No'}</span></div>
+                    </div>
+                    <h4 style="margin:16px 0 8px;">Activity Log</h4>
+                    <div class="admin-activity-feed" style="max-height:300px;overflow-y:auto;">
+                        ${d.activities.length === 0 ? '<p style="color:var(--text-muted);font-size:13px;">No activity</p>' :
+                        d.activities.map(a => {
+                            let detail = '';
+                            if (a.details) { try { const p = JSON.parse(a.details); detail = p.q || p.skills || p.job_id || ''; if(Array.isArray(detail)) detail=detail.join(', '); } catch(e) { detail = a.details; } }
+                            return `<div class="admin-activity-item">
+                                <span class="admin-activity-action">${a.action}</span>
+                                ${detail ? `<span class="admin-activity-detail">${escapeHtml(String(detail))}</span>` : ''}
+                                <span class="admin-activity-time">${timeAgo(a.timestamp)}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                `;
+                document.getElementById('user-modal').style.display = 'flex';
+            } catch (e) { console.error('User detail error:', e); }
+        }
+
+        function debounceSearchUsers() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                loadUsers(document.getElementById('user-search').value);
+            }, 300);
+        }
+
+        function drawGrowthChart(data) {
+            const canvas = document.getElementById('growth-chart');
+            if (!canvas || !data || data.length === 0) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const padding = 40;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const values = data.map(d => d.count);
+            const maxVal = Math.max(...values, 1);
+            const stepX = (w - padding * 2) / Math.max(data.length - 1, 1);
+
+            // Grid lines
+            ctx.strokeStyle = '#2a2a3a';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (h - padding * 2) * (i / 4);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(w - padding, y);
+                ctx.stroke();
+            }
+
+            // Line
+            ctx.strokeStyle = '#6c5ce7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            data.forEach((d, i) => {
+                const x = padding + i * stepX;
+                const y = h - padding - ((d.count / maxVal) * (h - padding * 2));
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Fill
+            ctx.lineTo(padding + (data.length - 1) * stepX, h - padding);
+            ctx.lineTo(padding, h - padding);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(108, 92, 231, 0.1)';
+            ctx.fill();
+
+            // Dots
+            data.forEach((d, i) => {
+                const x = padding + i * stepX;
+                const y = h - padding - ((d.count / maxVal) * (h - padding * 2));
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#6c5ce7';
+                ctx.fill();
+            });
+
+            // Labels
+            ctx.fillStyle = '#606070';
+            ctx.font = '10px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            const labelStep = Math.max(1, Math.floor(data.length / 6));
+            data.forEach((d, i) => {
+                if (i % labelStep === 0 || i === data.length - 1) {
+                    const x = padding + i * stepX;
+                    ctx.fillText(d.date.slice(5), x, h - 10);
+                }
+            });
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', initAdmin);
+    </script>
+</body>
+</html>
