@@ -1,6 +1,7 @@
 """Search engine logic for AgentJobs."""
 
 import json
+import re
 import time
 from typing import Optional, List, Tuple
 from database import get_db
@@ -55,8 +56,9 @@ async def _fts_search(
     params = []
     where_clauses = ["j.is_active = 1"]
 
-    # Clean FTS query
+    # Clean FTS query — strip FTS5 special characters to prevent syntax errors
     fts_query = q.replace('"', '').replace("'", "").strip()
+    fts_query = re.sub(r'[^\w\s\-]', ' ', fts_query).strip()
     if not fts_query:
         return await _filter_search(
             db, title, location, location_type, company, skills,

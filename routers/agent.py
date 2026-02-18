@@ -31,7 +31,7 @@ async def agent_search(request: AgentSearchRequest):
         )
 
     # Run matching
-    result = match_jobs_result = await match_jobs(
+    match_jobs_result = await match_jobs(
         skills=skills if skills else None,
         experience_years=request.experience_years,
         preferred_locations=request.preferred_locations,

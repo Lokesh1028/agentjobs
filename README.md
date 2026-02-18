@@ -2,7 +2,7 @@
 
 **API-first job platform optimized for AI agents.**
 
-600+ jobs from 90+ companies in India. Structured JSON responses in milliseconds. Built for agents, browsable by humans.
+2000+ jobs from 800+ companies in India. Structured JSON responses in milliseconds. Built for agents, browsable by humans.
 
 ## Quick Start
 
@@ -12,7 +12,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-The server starts at `http://localhost:8000`. Database is auto-seeded on first run with 600+ jobs.
+The server starts at `http://localhost:8000`. Database is auto-seeded on first run. Run `python services/real_scraper.py` to scrape fresh jobs from LinkedIn.
 
 ## API Endpoints
 

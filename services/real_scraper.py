@@ -166,8 +166,8 @@ async def run_full_scrape(db_path="agentjobs.db"):
     conn.commit()
     try:
         c.execute("DELETE FROM jobs_fts")
-        c.execute("""INSERT INTO jobs_fts(rowid,title,description,skills,location,company_name)
-                     SELECT j.rowid,j.title,COALESCE(j.description,''),COALESCE(j.skills,''),
+        c.execute("""INSERT INTO jobs_fts(job_id,title,description,skills,location,company_name)
+                     SELECT j.id,j.title,COALESCE(j.description,''),COALESCE(j.skills,''),
                      COALESCE(j.location,''),COALESCE(co.name,'') FROM jobs j LEFT JOIN companies co ON j.company_id=co.id""")
         conn.commit()
     except Exception as e: logger.warning(f"FTS: {e}")

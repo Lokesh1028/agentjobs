@@ -1,4 +1,32 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Environment
 .env
+
+# Database
+*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.db
+*.db-shm
+*.db-wal
