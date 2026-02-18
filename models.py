@@ -54,7 +54,7 @@ class JobSummary(BaseModel):
     employment_type: Optional[str] = None
     description_short: Optional[str] = None
     posted_at: Optional[str] = None
-    apply_url: str
+    apply_url: Optional[str] = None
     source: Optional[str] = None
 
 
@@ -96,7 +96,7 @@ class MatchedJob(BaseModel):
     match_score: int
     match_reasons: List[str]
     description_short: Optional[str] = None
-    apply_url: str
+    apply_url: Optional[str] = None
     skills_match: List[str] = []
     skills_missing: List[str] = []
 

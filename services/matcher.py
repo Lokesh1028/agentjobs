@@ -227,6 +227,7 @@ async def match_jobs(
             "match_reasons": reasons,
             "description_short": row["description_short"],
             "apply_url": row["apply_url"],
+            "source": row["source"],
             "skills_match": matched_skills,
             "skills_missing": missing_skills[:5],
         })

@@ -49,15 +49,23 @@ async def lifespan(app: FastAPI):
     # Seed admin
     await seed_admin()
 
-    # Auto-seed if empty
+    # Auto-seed if empty — fetch real jobs from public APIs
     from database import get_db
     db = await get_db()
     cursor = await db.execute("SELECT COUNT(*) FROM jobs")
     count = (await cursor.fetchone())[0]
     if count == 0:
-        print("Database is empty. Running seed...")
-        from seed.seed_data import seed_database
-        await seed_database()
+        print("Database is empty. Fetching real jobs from public APIs...")
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        from services.job_fetcher import fetch_real_jobs
+        inserted = await fetch_real_jobs()
+        if inserted == 0:
+            print("API fetch returned 0 jobs. Using minimal fallback seed...")
+            from seed.seed_data import seed_database
+            await seed_database()
+        else:
+            print(f"Successfully loaded {inserted} real jobs with verified apply links.")
 
     yield
 

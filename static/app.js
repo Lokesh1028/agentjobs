@@ -206,15 +206,32 @@ async function loadStats() {
 
 // ── Job Card Renderer ───────────────────────────
 
+function sourceLabel(src) {
+    if (!src) return '';
+    const labels = {remotive:'Remotive',jobicy:'Jobicy',themuse:'The Muse',arbeitnow:'Arbeitnow',linkedin:'LinkedIn',seed:'Offline'};
+    const colors = {remotive:'#059669',jobicy:'#7c3aed',themuse:'#2563eb',arbeitnow:'#d97706',linkedin:'#0a66c2',seed:'#6b7280'};
+    const name = labels[src] || src;
+    const color = colors[src] || '#6b7280';
+    return `<span class="source-badge" style="background:${color};color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;">via ${name}</span>`;
+}
+
 function renderJobCard(job) {
     const salary = job.salary_range || formatSalary(job.salary_min, job.salary_max);
     const skills = (job.skills || []).slice(0, 5);
     const company = typeof job.company === 'object' ? job.company.name : job.company;
+    const hasApplyUrl = job.apply_url && job.apply_url !== 'null' && job.apply_url !== '';
+    const clickAction = hasApplyUrl ? `onclick="window.open('${escapeHtml(job.apply_url)}', '_blank')"` : '';
+    const applyLabel = hasApplyUrl ? '🔗 Apply Now' : '📋 View Details';
 
     return `
-        <div class="card job-card" onclick="window.open('${escapeHtml(job.apply_url)}', '_blank')">
-            <div class="job-title">${escapeHtml(job.title)}</div>
-            <div class="job-company">${escapeHtml(company)}</div>
+        <div class="card job-card" ${clickAction} style="${hasApplyUrl ? 'cursor:pointer;' : 'cursor:default;opacity:0.9;'}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                    <div class="job-title">${escapeHtml(job.title)}</div>
+                    <div class="job-company">${escapeHtml(company)}${sourceLabel(job.source)}</div>
+                </div>
+                <span style="font-size:11px;white-space:nowrap;padding:4px 10px;border-radius:6px;font-weight:600;${hasApplyUrl ? 'background:var(--green,#059669);color:#fff;' : 'background:#e5e7eb;color:#374151;'}">${applyLabel}</span>
+            </div>
             <div class="job-meta">
                 ${job.location ? `<span class="tag">${escapeHtml(job.location)}</span>` : ''}
                 ${job.location_type ? `<span class="tag blue">${escapeHtml(job.location_type)}</span>` : ''}
@@ -236,14 +253,21 @@ function renderJobCard(job) {
 
 function renderMatchCard(job) {
     const scoreClass = getMatchClass(job.match_score);
+    const hasApplyUrl = job.apply_url && job.apply_url !== 'null' && job.apply_url !== '';
+    const clickAction = hasApplyUrl ? `onclick="window.open('${escapeHtml(job.apply_url)}', '_blank')"` : '';
+    const applyLabel = hasApplyUrl ? '🔗 Apply Now' : '📋 View Details';
+
     return `
-        <div class="card job-card" onclick="window.open('${escapeHtml(job.apply_url)}', '_blank')">
+        <div class="card job-card" ${clickAction} style="${hasApplyUrl ? 'cursor:pointer;' : 'cursor:default;'}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
                 <div>
                     <div class="job-title">${escapeHtml(job.title)}</div>
-                    <div class="job-company">${escapeHtml(job.company)}</div>
+                    <div class="job-company">${escapeHtml(job.company)}${typeof sourceLabel === 'function' ? sourceLabel(job.source) : ''}</div>
                 </div>
-                <span class="match-score ${scoreClass}">${job.match_score}%</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:10px;padding:3px 8px;border-radius:4px;font-weight:600;${hasApplyUrl ? 'background:var(--green,#059669);color:#fff;' : 'background:#e5e7eb;color:#374151;'}">${applyLabel}</span>
+                    <span class="match-score ${scoreClass}">${job.match_score}%</span>
+                </div>
             </div>
             <div class="job-meta">
                 ${job.location ? `<span class="tag">${escapeHtml(job.location)}</span>` : ''}

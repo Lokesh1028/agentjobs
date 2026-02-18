@@ -66,12 +66,13 @@ async def init_db():
             skills TEXT,
             category TEXT,
             employment_type TEXT,
-            apply_url TEXT NOT NULL,
+            apply_url TEXT,
             source TEXT,
             source_id TEXT,
             posted_at TIMESTAMP,
             scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             is_active BOOLEAN DEFAULT 1,
+            verified_at TIMESTAMP,
             raw_data TEXT
         );
 
@@ -179,6 +180,12 @@ async def init_db():
         """)
     except Exception:
         pass  # Already exists
+
+    # Migration: add verified_at column if missing (for existing databases)
+    try:
+        await db.execute("ALTER TABLE jobs ADD COLUMN verified_at TIMESTAMP")
+    except Exception:
+        pass  # Column already exists
 
     await db.commit()
 
