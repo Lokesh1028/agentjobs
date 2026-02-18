@@ -135,22 +135,48 @@ def _classify_category(title, tags=None):
     return "engineering"
 
 
+# Words that are common English AND programming terms — only match in tags, not description text
+# Short/common English words that are also tech terms — only match from explicit tags
+AMBIGUOUS_SKILLS = {"react", "go", "r", "swift", "rust", "dart", "spark", "kafka", "hive", "sass", "less", "puppet", "chef", "c", "d"}
+# Cloud/infra terms that are unambiguous in tech context but can false-positive in non-tech jobs
+TECH_CONTEXT_SKILLS = {"aws", "azure", "gcp", "flask", "ansible", "terraform", "groovy"}
+TECH_CATEGORIES = {"engineering", "data-science", "design", "product"}
+
 def _extract_skills(tags, description=""):
     found = set()
-    text = " ".join(t if isinstance(t, str) else str(t) for t in tags).lower() + " " + (description or "").lower()
-    text = text.replace("node.js", "nodejs").replace("next.js", "nextjs")
-    text = text.replace("ruby on rails", "ruby-on-rails").replace("spring boot", "spring-boot")
+    tag_text = " ".join(t if isinstance(t, str) else str(t) for t in tags).lower()
+    desc_text = (description or "").lower()
+    desc_text = desc_text.replace("node.js", "nodejs").replace("next.js", "nextjs")
+    desc_text = desc_text.replace("ruby on rails", "ruby-on-rails").replace("spring boot", "spring-boot")
 
     for skill in KNOWN_SKILLS:
+        # First: exact tag match (most reliable)
+        tag_matched = False
         for tag in tags:
-            tag_str = tag if isinstance(tag, str) else str(tag)
-            if tag_str.lower().strip() == skill or tag_str.lower().strip().replace(" ", "-") == skill:
+            tag_str = (tag if isinstance(tag, str) else str(tag)).lower().strip()
+            if tag_str == skill or tag_str.replace(" ", "-") == skill or tag_str.replace("-", "") == skill.replace("-", ""):
                 found.add(skill)
+                tag_matched = True
                 break
-        if skill not in found:
-            pattern = r'\b' + re.escape(skill).replace(r'\-', r'[\-\s]?') + r'\b'
-            if re.search(pattern, text):
-                found.add(skill)
+        
+        if tag_matched:
+            continue
+
+        # For ambiguous words: only match from tags, not description
+        if skill in AMBIGUOUS_SKILLS:
+            continue
+        
+        # For tech-context skills: only match in description if tags suggest tech job
+        if skill in TECH_CONTEXT_SKILLS:
+            tag_lower = " ".join((t if isinstance(t, str) else str(t)).lower() for t in tags)
+            tech_hints = any(kw in tag_lower for kw in ["software", "engineer", "developer", "devops", "cloud", "data", "backend", "frontend", "fullstack", "python", "java", "javascript", "node"])
+            if not tech_hints:
+                continue
+
+        # For unambiguous technical terms: search in description too
+        pattern = r'\b' + re.escape(skill).replace(r'\-', r'[\-\s]?') + r'\b'
+        if re.search(pattern, desc_text):
+            found.add(skill)
 
     return sorted(found)[:10]
 

@@ -42,7 +42,9 @@ def _get_state(location: str) -> Optional[str]:
 def _score_skills(candidate_skills: List[str], job_skills: List[str]) -> tuple:
     """Score skills match (0-40 points). Returns (score, matched, missing)."""
     if not job_skills:
-        return 20, [], []  # No skills required, give partial credit
+        if candidate_skills:
+            return 0, [], []  # Job has no skill data, can't match — no free points
+        return 10, [], []  # Neither side has skills, small partial credit
 
     c_set = set(normalize_skill(s) for s in candidate_skills)
     j_set = set(normalize_skill(s) for s in job_skills)
@@ -61,18 +63,24 @@ def _score_skills(candidate_skills: List[str], job_skills: List[str]) -> tuple:
 
 def _score_location(candidate_locations: List[str], job_location: Optional[str], job_location_type: Optional[str]) -> tuple:
     """Score location match (0-20 points). Returns (score, reason)."""
+    job_loc = (job_location or "").lower().strip()
+
     if not job_location and not job_location_type:
         return 10, "Location: Not specified by employer"
 
     # Remote jobs match everyone
     if job_location_type and job_location_type.lower() == "remote":
         return 20, "Location: Remote position — available anywhere"
+    
+    # Check if job location text indicates remote
+    remote_keywords = ["remote", "anywhere", "worldwide", "global", "flexible"]
+    if any(kw in job_loc for kw in remote_keywords):
+        return 18, "Location: Remote/flexible position"
 
     if not candidate_locations:
         return 10, "Location: No preference specified"
 
     candidate_locs = [loc.lower().strip() for loc in candidate_locations]
-    job_loc = (job_location or "").lower().strip()
 
     # Check exact city match
     for cloc in candidate_locs:
