@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentJobs — The Job API for AI Agents</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">⚡ Agent<span>Jobs</span></a>
+        <ul class="nav-links">
+            <li><a href="/" class="active">Home</a></li>
+            <li><a href="/search">Search</a></li>
+            <li><a href="/docs-page">API Docs</a></li>
+            <li><a href="/agent">Hire an Agent</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero">
+        <h1>The Job API for <span class="gradient">AI Agents</span></h1>
+        <p>600+ jobs from 90+ companies. Structured JSON responses in milliseconds. Built for agents, browsable by humans.</p>
+        <div class="search-box">
+            <input type="text" id="hero-search" placeholder="Search jobs... (e.g., python developer bangalore)">
+            <button onclick="quickSearch()">Search</button>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <a href="/docs-page" class="btn btn-primary">📖 API Docs</a>
+            <a href="/agent" class="btn btn-secondary">🤖 Hire an Agent</a>
+            <a href="/mcp/manifest.json" class="btn btn-secondary" target="_blank">🔌 MCP Manifest</a>
+        </div>
+    </section>
+
+    <div class="stats-row" id="stats-row">
+        <div class="stat"><div class="stat-num">—</div><div class="stat-label">Active Jobs</div></div>
+        <div class="stat"><div class="stat-num">—</div><div class="stat-label">Companies</div></div>
+        <div class="stat"><div class="stat-num">—</div><div class="stat-label">Categories</div></div>
+    </div>
+
+    <section class="section">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">Three ways to use AgentJobs</p>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <h3>REST API</h3>
+                <p>Query structured job data with powerful filters. Get JSON responses in &lt;100ms. Perfect for AI agents and automation.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <h3>MCP Protocol</h3>
+                <p>Discover and use AgentJobs as a tool via MCP manifest. Any AI agent can search jobs and match resumes natively.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <h3>Agent Matching</h3>
+                <p>POST a resume or skills profile. Get scored job matches with detailed match reasons in under 3 seconds.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="section-title">Quick Start</h2>
+        <p class="section-subtitle">Get started in 30 seconds</p>
+
+        <div class="code-block">
+            <span class="lang-label">curl</span>
+            <pre># Search for Python jobs in Bangalore
+curl "http://localhost:8000/api/v1/jobs?q=python&location=Bangalore&limit=5"
+
+# Match a resume against all jobs
+curl -X POST "http://localhost:8000/api/v1/agent/search" \
+  -H "Content-Type: application/json" \
+  -d '{"skills":["python","sql","ml"],"experience_years":3,"preferred_locations":["Hyderabad"]}'</pre>
+        </div>
+
+        <div class="code-block">
+            <span class="lang-label">python</span>
+            <pre>import requests
+
+# Search jobs
+jobs = requests.get("http://localhost:8000/api/v1/jobs", params={
+    "q": "machine learning",
+    "location": "Bangalore",
+    "salary_min": 80000,
+}).json()
+
+print(f"Found {jobs['total']} jobs in {jobs['query_time_ms']}ms")
+for job in jobs['jobs'][:3]:
+    print(f"  {job['title']} @ {job['company']['name']} — {job['salary_range']}")</pre>
+        </div>
+    </section>
+
+    <footer>
+        <p>AgentJobs v1.0 · Built for AI agents · <a href="/docs-page">API Docs</a> · <a href="/mcp/manifest.json">MCP Manifest</a></p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

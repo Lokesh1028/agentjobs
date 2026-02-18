@@ -1,0 +1,282 @@
+/* AgentJobs — Frontend JavaScript */
+
+const API_BASE = '/api/v1';
+
+// ── Utility Functions ───────────────────────────
+
+function $(sel, ctx = document) { return ctx.querySelector(sel); }
+function $$(sel, ctx = document) { return [...ctx.querySelectorAll(sel)]; }
+
+function formatSalary(min, max) {
+    if (min && max) return `₹${(min/1000).toFixed(0)}K - ₹${(max/1000).toFixed(0)}K/mo`;
+    if (min) return `₹${(min/1000).toFixed(0)}K+/mo`;
+    if (max) return `Up to ₹${(max/1000).toFixed(0)}K/mo`;
+    return null;
+}
+
+function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const days = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+    return `${Math.floor(days / 30)} months ago`;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function getMatchClass(score) {
+    if (score >= 70) return 'high';
+    if (score >= 40) return 'medium';
+    return 'low';
+}
+
+// ── API Functions ───────────────────────────────
+
+async function apiGet(path, params = {}) {
+    const url = new URL(API_BASE + path, window.location.origin);
+    Object.entries(params).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && v !== '') url.searchParams.set(k, v);
+    });
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json();
+}
+
+async function apiPost(path, body) {
+    const res = await fetch(API_BASE + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `API error: ${res.status}`);
+    }
+    return res.json();
+}
+
+// ── Stats Loader (for landing page) ─────────────
+
+async function loadStats() {
+    try {
+        const stats = await apiGet('/stats');
+        const el = $('#stats-row');
+        if (!el) return;
+        el.innerHTML = `
+            <div class="stat">
+                <div class="stat-num">${stats.total_active_jobs.toLocaleString()}</div>
+                <div class="stat-label">Active Jobs</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">${stats.total_companies.toLocaleString()}</div>
+                <div class="stat-label">Companies</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">${stats.categories.length}</div>
+                <div class="stat-label">Categories</div>
+            </div>
+        `;
+    } catch (e) {
+        console.error('Failed to load stats:', e);
+    }
+}
+
+// ── Job Card Renderer ───────────────────────────
+
+function renderJobCard(job) {
+    const salary = job.salary_range || formatSalary(job.salary_min, job.salary_max);
+    const skills = (job.skills || []).slice(0, 5);
+    const company = typeof job.company === 'object' ? job.company.name : job.company;
+
+    return `
+        <div class="card job-card" onclick="window.open('${escapeHtml(job.apply_url)}', '_blank')">
+            <div class="job-title">${escapeHtml(job.title)}</div>
+            <div class="job-company">${escapeHtml(company)}</div>
+            <div class="job-meta">
+                ${job.location ? `<span class="tag">${escapeHtml(job.location)}</span>` : ''}
+                ${job.location_type ? `<span class="tag blue">${escapeHtml(job.location_type)}</span>` : ''}
+                ${job.employment_type ? `<span class="tag">${escapeHtml(job.employment_type)}</span>` : ''}
+                ${job.category ? `<span class="tag">${escapeHtml(job.category)}</span>` : ''}
+            </div>
+            ${salary ? `<div class="job-salary">${escapeHtml(salary)}</div>` : ''}
+            <div class="job-skills">
+                ${skills.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('')}
+            </div>
+            ${job.description_short ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">${escapeHtml(job.description_short)}</p>` : ''}
+            <div class="job-footer">
+                <span>${job.experience || ''}</span>
+                <span>${timeAgo(job.posted_at)}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderMatchCard(job) {
+    const scoreClass = getMatchClass(job.match_score);
+    return `
+        <div class="card job-card" onclick="window.open('${escapeHtml(job.apply_url)}', '_blank')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                <div>
+                    <div class="job-title">${escapeHtml(job.title)}</div>
+                    <div class="job-company">${escapeHtml(job.company)}</div>
+                </div>
+                <span class="match-score ${scoreClass}">${job.match_score}%</span>
+            </div>
+            <div class="job-meta">
+                ${job.location ? `<span class="tag">${escapeHtml(job.location)}</span>` : ''}
+                ${job.salary_range ? `<span class="tag green">${escapeHtml(job.salary_range)}</span>` : ''}
+            </div>
+            ${job.description_short ? `<p style="font-size:13px;color:var(--text-secondary);margin:8px 0;">${escapeHtml(job.description_short)}</p>` : ''}
+            <div class="job-skills" style="margin-bottom:8px;">
+                ${(job.skills_match || []).map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('')}
+                ${(job.skills_missing || []).map(s => `<span class="skill-tag" style="opacity:0.4;text-decoration:line-through;">${escapeHtml(s)}</span>`).join('')}
+            </div>
+            <ul class="match-reasons">
+                ${(job.match_reasons || []).map(r => `<li>${escapeHtml(r)}</li>`).join('')}
+            </ul>
+        </div>
+    `;
+}
+
+// ── Search Page Logic ───────────────────────────
+
+async function searchJobs() {
+    const q = $('#search-input')?.value || '';
+    const location = $('#filter-location')?.value || '';
+    const category = $('#filter-category')?.value || '';
+    const locationType = $('#filter-location-type')?.value || '';
+    const employmentType = $('#filter-employment-type')?.value || '';
+
+    const resultsEl = $('#results');
+    const headerEl = $('#results-header');
+    if (!resultsEl) return;
+
+    resultsEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    try {
+        const data = await apiGet('/jobs', {
+            q: q || undefined,
+            location: location || undefined,
+            category: category || undefined,
+            location_type: locationType || undefined,
+            employment_type: employmentType || undefined,
+            limit: 40,
+        });
+
+        if (headerEl) {
+            headerEl.innerHTML = `
+                <span class="results-count">${data.total.toLocaleString()} jobs found</span>
+                <span class="results-time">${data.query_time_ms.toFixed(1)}ms</span>
+            `;
+        }
+
+        if (data.jobs.length === 0) {
+            resultsEl.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:40px;">No jobs found matching your criteria.</p>';
+            return;
+        }
+
+        resultsEl.innerHTML = `<div class="cards-grid">${data.jobs.map(renderJobCard).join('')}</div>`;
+    } catch (e) {
+        resultsEl.innerHTML = `<p style="text-align:center;color:var(--red);padding:40px;">Error: ${escapeHtml(e.message)}</p>`;
+    }
+}
+
+// ── Agent Search Logic ──────────────────────────
+
+async function agentSearch() {
+    const resumeText = $('#resume-text')?.value || '';
+    const skills = $('#agent-skills')?.value || '';
+    const experience = $('#agent-experience')?.value || '';
+    const locations = $('#agent-locations')?.value || '';
+    const salaryMin = $('#agent-salary')?.value || '';
+
+    const resultsEl = $('#agent-results');
+    if (!resultsEl) return;
+
+    resultsEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    const body = {};
+    if (resumeText) body.resume_text = resumeText;
+    if (skills) body.skills = skills.split(',').map(s => s.trim()).filter(Boolean);
+    if (experience) body.experience_years = parseInt(experience);
+    if (locations) body.preferred_locations = locations.split(',').map(s => s.trim()).filter(Boolean);
+    if (salaryMin) body.salary_min = parseInt(salaryMin);
+    body.limit = 20;
+
+    try {
+        const data = await apiPost('/agent/search', body);
+
+        resultsEl.innerHTML = `
+            <div class="results-header">
+                <span class="results-count">${data.match_count} matches found</span>
+                <span class="results-time">Matched in ${data.query_time_ms.toFixed(0)}ms · Session: ${data.session_id}</span>
+            </div>
+            <div class="cards-grid">
+                ${data.jobs.map(renderMatchCard).join('')}
+            </div>
+        `;
+    } catch (e) {
+        resultsEl.innerHTML = `<p style="text-align:center;color:var(--red);padding:40px;">Error: ${escapeHtml(e.message)}</p>`;
+    }
+}
+
+// ── Landing Page Quick Search ───────────────────
+
+function quickSearch() {
+    const q = $('#hero-search')?.value;
+    if (q) {
+        window.location.href = `/search?q=${encodeURIComponent(q)}`;
+    }
+}
+
+// ── Initialize ──────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Landing page
+    if ($('#stats-row')) loadStats();
+    if ($('#hero-search')) {
+        $('#hero-search').addEventListener('keydown', e => {
+            if (e.key === 'Enter') quickSearch();
+        });
+    }
+
+    // Search page
+    if ($('#search-input')) {
+        // Load from URL params
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('q')) $('#search-input').value = params.get('q');
+
+        // Auto-search on load if query exists
+        if (params.get('q')) searchJobs();
+
+        // Search on enter
+        $('#search-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') searchJobs();
+        });
+
+        // Load categories for filter
+        apiGet('/categories').then(data => {
+            const sel = $('#filter-category');
+            if (sel && data.categories) {
+                data.categories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.category;
+                    opt.textContent = `${c.category} (${c.count})`;
+                    sel.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    // Agent page
+    if ($('#agent-search-btn')) {
+        $('#agent-search-btn').addEventListener('click', agentSearch);
+    }
+});

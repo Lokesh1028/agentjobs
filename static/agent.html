@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hire an Agent — AgentJobs</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">⚡ Agent<span>Jobs</span></a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/search">Search</a></li>
+            <li><a href="/docs-page">API Docs</a></li>
+            <li><a href="/agent" class="active">Hire an Agent</a></li>
+        </ul>
+    </nav>
+
+    <section class="section">
+        <div style="text-align:center;margin-bottom:40px;">
+            <h1 style="font-size:36px;font-weight:700;">🤖 Hire an Agent</h1>
+            <p style="color:var(--text-secondary);font-size:16px;max-width:500px;margin:12px auto 0;">
+                Paste your resume or enter your skills. Our AI will match you with the best jobs in seconds.
+            </p>
+        </div>
+
+        <div class="agent-form">
+            <div class="form-group">
+                <label>Resume / About You</label>
+                <textarea id="resume-text" placeholder="Paste your resume text here, or describe your experience and what you're looking for..."></textarea>
+            </div>
+
+            <div style="text-align:center;color:var(--text-muted);margin:8px 0;">— or enter details manually —</div>
+
+            <div class="form-group">
+                <label>Skills (comma-separated)</label>
+                <input type="text" id="agent-skills" placeholder="e.g., python, sql, machine-learning, docker">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label>Years of Experience</label>
+                    <input type="number" id="agent-experience" placeholder="e.g., 3" min="0" max="30">
+                </div>
+                <div class="form-group">
+                    <label>Minimum Salary (₹/month)</label>
+                    <input type="number" id="agent-salary" placeholder="e.g., 80000" min="0" step="5000">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Preferred Locations (comma-separated)</label>
+                <input type="text" id="agent-locations" placeholder="e.g., Hyderabad, Bangalore, Remote">
+            </div>
+
+            <div style="text-align:center;margin-top:24px;">
+                <button class="btn btn-primary" id="agent-search-btn" style="padding:14px 48px;font-size:16px;">
+                    🔍 Find Matching Jobs
+                </button>
+            </div>
+        </div>
+
+        <div id="agent-results" style="margin-top:40px;"></div>
+    </section>
+
+    <footer>
+        <p>AgentJobs v1.0 · Matching powered by skills + location + salary + experience scoring</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

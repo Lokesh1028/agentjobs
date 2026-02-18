@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Jobs — AgentJobs</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">⚡ Agent<span>Jobs</span></a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/search" class="active">Search</a></li>
+            <li><a href="/docs-page">API Docs</a></li>
+            <li><a href="/agent">Hire an Agent</a></li>
+        </ul>
+    </nav>
+
+    <section class="section">
+        <div class="search-box" style="max-width:100%;margin-bottom:20px;">
+            <input type="text" id="search-input" placeholder="Search jobs... (e.g., python developer, data scientist, product manager)">
+            <button onclick="searchJobs()">Search</button>
+        </div>
+
+        <div class="filters">
+            <select class="filter-select" id="filter-location" onchange="searchJobs()">
+                <option value="">All Locations</option>
+                <option value="Hyderabad">Hyderabad</option>
+                <option value="Bangalore">Bangalore</option>
+                <option value="Mumbai">Mumbai</option>
+                <option value="Pune">Pune</option>
+                <option value="Delhi NCR">Delhi NCR</option>
+                <option value="Chennai">Chennai</option>
+                <option value="Kolkata">Kolkata</option>
+                <option value="Ahmedabad">Ahmedabad</option>
+                <option value="Remote">Remote</option>
+            </select>
+
+            <select class="filter-select" id="filter-category" onchange="searchJobs()">
+                <option value="">All Categories</option>
+            </select>
+
+            <select class="filter-select" id="filter-location-type" onchange="searchJobs()">
+                <option value="">All Types</option>
+                <option value="onsite">Onsite</option>
+                <option value="remote">Remote</option>
+                <option value="hybrid">Hybrid</option>
+            </select>
+
+            <select class="filter-select" id="filter-employment-type" onchange="searchJobs()">
+                <option value="">All Employment</option>
+                <option value="full-time">Full-time</option>
+                <option value="part-time">Part-time</option>
+                <option value="contract">Contract</option>
+                <option value="internship">Internship</option>
+            </select>
+        </div>
+
+        <div id="results-header" class="results-header"></div>
+        <div id="results">
+            <p style="text-align:center;color:var(--text-muted);padding:60px 20px;">
+                Search for jobs above or browse all listings.
+            </p>
+        </div>
+    </section>
+
+    <footer>
+        <p>AgentJobs v1.0 · <a href="/docs-page">API Docs</a></p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
